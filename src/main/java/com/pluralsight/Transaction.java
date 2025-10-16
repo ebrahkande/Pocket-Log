@@ -12,7 +12,6 @@ public class Transaction {
 
     // Constructor: Used to create a new Transaction object with all its data.
     public Transaction(String date, String time, String description, String vendor, double amount) {
-
         this.date = date;
         this.time = time;
         this.description = description;

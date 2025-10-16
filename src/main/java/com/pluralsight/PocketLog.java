@@ -1,25 +1,21 @@
 package com.pluralsight;
 
 // Import necessary classes
-import java.io.File;  // Tool for file operations
-import java.io.FileNotFoundException; // Tool for file operations
-import java.io.FileWriter;  // Tool used for file writing
-import java.io.IOException;  // Tool used for general file I/O errors
-import java.time.LocalDate;  // Tool to work with dates
-import java.time.format.DateTimeFormatter;  // Tool to define the date format
-import java.util.ArrayList;  // Tools for storing lists of transactions
-import java.util.Scanner;  // Tools used for user input and file reading
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Scanner;
+import java.util.List;
+import java.util.ArrayList;
 
 public class PocketLog {
 
-    // Core Application Constants
-    private static final String FILENAME = "transactions.csv";
     private static final Scanner menuScanner = new Scanner(System.in);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    //  The main entry point
+    // 1. MAIN ENTRY POINT
     public static void main(String[] args) {
 
-        System.out.println("Welcome to PocketLog!");
+        System.out.println("Welcome to PocketLog CLI!");
 
         boolean running = true;
 
@@ -30,7 +26,6 @@ public class PocketLog {
             System.out.print("Enter your choice: ");
             String choice = menuScanner.nextLine().trim().toUpperCase();
 
-            // Navigation logic using the switch statement
             switch (choice) {
                 case "D":
                     recordTransaction("DEPOSIT");
@@ -39,18 +34,16 @@ public class PocketLog {
                     recordTransaction("PAYMENT");
                     break;
                 case "L":
-                    // Calling the fully implemented Ledger function
                     displayLedger();
                     break;
                 case "S":
-                    // Placeholder for Custom Search
-                    System.out.println("-> S: Going to Custom Search screen (Not implemented)...");
+                    customSearch();
                     break;
                 case "X":
-                    running = false; // Exit the loop
+                    running = false;
                     break;
                 default:
-                    System.out.println(" Invalid option. Please enter D, P, L, S, or X.");
+                    System.out.println("❌ Invalid option. Please enter D, P, L, S, or X.");
                     break;
             }
 
@@ -64,7 +57,7 @@ public class PocketLog {
         System.out.println("Application closed. Goodbye!");
     }
 
-    // The Menu Display
+    // 2. PRIMARY HELPER METHOD (Menu Display)
     private static void displayMainMenu() {
         System.out.println("\n--- POCKETLOG MAIN MENU ---");
         System.out.println("D) Add Deposit");
@@ -74,12 +67,12 @@ public class PocketLog {
         System.out.println("X) Exit");
     }
 
-    // Record Transaction
+    // 3. CORE ACTION METHOD (Record Transaction)
     private static void recordTransaction(String type) {
         System.out.println("\n--- RECORD NEW " + type + " ---");
 
         try {
-            // Gather Input
+            // 1. Gather Input
             System.out.print("Enter Date (YYYY-MM-DD): ");
             String date = menuScanner.nextLine();
             System.out.print("Enter Time (HH:MM): ");
@@ -91,7 +84,7 @@ public class PocketLog {
             System.out.print("Enter Amount (e.g., 50.00): ");
             String stringAmount = menuScanner.nextLine();
 
-            // Process Amount
+            // 2. Process Amount
             double amount = Double.parseDouble(stringAmount);
 
             if (type.equals("PAYMENT")) {
@@ -100,34 +93,25 @@ public class PocketLog {
                 }
             }
 
-            // Create Object
+            // 3. Create Object
             Transaction newTransaction = new Transaction(date, time, description, vendor, amount);
 
-            // File Writing
-            try {
-                FileWriter writer = new FileWriter(FILENAME, true);
-                writer.write(newTransaction.toString());
-                writer.write("\n");
-                writer.close();
-
-                System.out.println("\n Success! " + type + " recorded.");
+            // 4. File Writing (DELEGATED)
+            if (FinanceManager.saveTransaction(newTransaction)) {
+                System.out.println("\n✅ Success! " + type + " recorded.");
                 System.out.println("   -> " + newTransaction.toString());
-
-            } catch (IOException e) {
-                System.out.println("\n ERROR: Could not write to the transaction file.");
-                System.out.println("   Details: " + e.getMessage());
+            } else {
+                System.out.println("\n❌ ERROR: Could not write to the transaction file.");
             }
 
         } catch (NumberFormatException e) {
-            System.out.println("\n ERROR: Invalid amount entered. Please use a number (e.g., 50.00).");
+            System.out.println("\n❌ ERROR: Invalid amount entered. Please use a number (e.g., 50.00).");
         }
     }
 
-    // Display Ledger
+    // 4. CORE ACTION METHOD (Display Ledger)
     private static void displayLedger() {
         boolean runningLedger = true;
-
-        final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String searchVendor = "";
 
         while (runningLedger) {
@@ -152,81 +136,201 @@ public class PocketLog {
                 searchVendor = menuScanner.nextLine().trim();
             }
 
+            // MTD Setup
             boolean isMTD = filterChoice.equals("M");
             LocalDate startOfMonth = null;
             LocalDate today = null;
 
             if (isMTD) {
                 today = LocalDate.now();
-
                 startOfMonth = today.withDayOfMonth(1);
                 System.out.printf("\n--- Showing Transactions from %s to %s ---\n", startOfMonth, today);
             }
 
-            if (!filterChoice.equals("A") && !filterChoice.equals("D") && !filterChoice.equals("P")) {
-                System.out.println(" Invalid filter choice. Please enter A, D, P, or H.");
+            // Validation
+            if (!filterChoice.equals("A") && !filterChoice.equals("D") && !filterChoice.equals("P") && !filterChoice.equals("V") && !filterChoice.equals("M")) {
+                System.out.println("❌ Invalid filter choice. Please enter A, D, P, V, M, or H.");
                 System.out.println("Press ENTER to continue...");
                 menuScanner.nextLine();
                 continue;
             }
 
-            // Read All Transactions into a list
-            ArrayList<String> transactions = new ArrayList<>();
+            // 1. Read All Transactions (DELEGATED)
+            List<Transaction> transactions = FinanceManager.loadTransactions();
+
+            if (transactions.isEmpty()) {
+                System.out.println("\nNo transactions found. Use D or P to add a record.");
+                continue;
+            }
+
+            // 2. Display Header
+            System.out.println("\n------------------------------------------");
+            System.out.println("DATE|TIME|DESCRIPTION|VENDOR|AMOUNT");
+            System.out.println("------------------------------------------");
+
+            // 3. Loop BACKWARDS and filter (Using Transaction object methods)
             try {
-                File file = new File(FILENAME);
-                Scanner fileScanner = new Scanner(file);
-
-                while (fileScanner.hasNextLine()) {
-                    transactions.add(fileScanner.nextLine());
-                }
-                fileScanner.close();
-
-                if (transactions.isEmpty()) {
-                    System.out.println("\nNo transactions found. Use D or P to add a record.");
-                    continue;
-                }
-
-                // Display Header
-                System.out.println("\n------------------------------------------");
-                System.out.println("DATE|TIME|DESCRIPTION|VENDOR|AMOUNT");
-                System.out.println("------------------------------------------");
-
-                // Loop Backwards to filter and display
                 for (int i = transactions.size() - 1; i >= 0; i--) {
-                    String transactionLine = transactions.get(i);
-                    String[] parts = transactionLine.split("\\|");
-
-                    String vendor = parts[3];
-                    String amountString = parts[4];
-                    double amount = Double.parseDouble(amountString);
+                    Transaction t = transactions.get(i);
 
                     boolean shouldDisplay = false;
 
+                    // Apply Filters (Using Transaction helpers)
                     if (filterChoice.equals("A")) {
                         shouldDisplay = true;
-                    } else if (filterChoice.equals("D") && amount > 0) {
-                        shouldDisplay = true; // Deposits are positive
-                    } else if (filterChoice.equals("P") && amount < 0) {
-                        shouldDisplay = true; // Payments are negative
-                    } else if (filterChoice.equals("V") && vendor.equalsIgnoreCase(searchVendor)) {
+                    } else if (filterChoice.equals("D") && t.isDeposit()) {
                         shouldDisplay = true;
+                    } else if (filterChoice.equals("P") && t.isPayment()) {
+                        shouldDisplay = true;
+                    } else if (filterChoice.equals("V") && t.getVendor().equalsIgnoreCase(searchVendor)) {
+                        shouldDisplay = true;
+                    }
+
+                    // Apply MTD Filter
+                    else if (isMTD) {
+                        LocalDate transactionDate = LocalDate.parse(t.getDate(), DATE_FORMATTER);
+
+                        if (!transactionDate.isBefore(startOfMonth) && !transactionDate.isAfter(today)) {
+                            shouldDisplay = true;
+                        }
                     }
 
                     if (shouldDisplay) {
-                        System.out.println(transactionLine);
+                        System.out.println(t.toString());
                     }
                 }
-
-            } catch (FileNotFoundException e) {
-                System.out.println("\n ERROR: The transaction file (" + FILENAME + ") was not found.");
-                System.out.println("Please enter a Deposit (D) or Payment (P) first to create the file.");
-            } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-                System.out.println("\n FATAL ERROR: Data file appears corrupted. Cannot read transaction amounts.");
+            } catch (Exception e) {
+                System.out.println("\n❌ ERROR: An unexpected error occurred while displaying ledger.");
             }
 
             System.out.println("------------------------------------------");
             System.out.println("Press ENTER to view another filter, or H to go home.");
             menuScanner.nextLine();
+        }
+    }
+
+    // 5. CORE ACTION METHOD (Custom Search)
+    private static void customSearch() {
+        System.out.println("\n--- CUSTOM SEARCH (Optional Filters) ---");
+
+        // --- 1. Collect Filters ---
+        System.out.println("\n--- TEXT FILTERS ---");
+        System.out.print("Enter Vendor/Source name (leave blank to skip): ");
+        String vendorFilter = menuScanner.nextLine().trim().toUpperCase();
+
+        System.out.print("Enter keyword in Description (leave blank to skip): ");
+        String descriptionFilter = menuScanner.nextLine().trim().toUpperCase();
+
+        System.out.println("\n--- AMOUNT RANGE ---");
+        System.out.print("Enter MINIMUM Amount (0 or blank to skip): $");
+        String minAmountStr = menuScanner.nextLine().trim();
+
+        System.out.print("Enter MAXIMUM Amount (0 or blank to skip): $");
+        String maxAmountStr = menuScanner.nextLine().trim();
+
+        System.out.println("\n--- DATE RANGE ---");
+        System.out.print("Enter Start Date (YYYY-MM-DD, blank to skip): ");
+        String startDateStr = menuScanner.nextLine().trim();
+
+        System.out.print("Enter End Date (YYYY-MM-DD, blank to skip): ");
+        String endDateStr = menuScanner.nextLine().trim();
+
+        // --- 2. Prepare Filters for Logic ---
+
+        double minAmount = 0.0;
+        double maxAmount = Double.MAX_VALUE;
+        LocalDate startDate = null;
+        LocalDate endDate = null;
+
+        try {
+            if (!minAmountStr.isEmpty()) {
+                minAmount = Double.parseDouble(minAmountStr);
+            }
+            if (!maxAmountStr.isEmpty() && Double.parseDouble(maxAmountStr) > 0) {
+                maxAmount = Double.parseDouble(maxAmountStr);
+            }
+
+            if (!startDateStr.isEmpty()) {
+                startDate = LocalDate.parse(startDateStr, DATE_FORMATTER);
+            }
+            if (!endDateStr.isEmpty()) {
+                endDate = LocalDate.parse(endDateStr, DATE_FORMATTER);
+            }
+
+        } catch (NumberFormatException e) {
+            System.out.println("\n❌ ERROR: Invalid number entered for amount. Returning to main menu.");
+            return;
+        } catch (java.time.format.DateTimeParseException e) {
+            System.out.println("\n❌ ERROR: Invalid date format. Please use YYYY-MM-DD. Returning to main menu.");
+            return;
+        }
+
+        // --- 3. Perform Filtering (Logic uses Transaction objects) ---
+
+        List<Transaction> transactions = FinanceManager.loadTransactions();
+        List<Transaction> results = new ArrayList<>();
+
+        if (transactions.isEmpty()) {
+            System.out.println("No transactions to search.");
+            return;
+        }
+
+        try {
+            for (Transaction t : transactions) {
+
+                boolean passesAllFilters = true;
+
+                // 1. Vendor Filter
+                if (!vendorFilter.isEmpty() && !t.getVendor().toUpperCase().contains(vendorFilter)) {
+                    passesAllFilters = false;
+                }
+
+                // 2. Description Filter
+                if (passesAllFilters && !descriptionFilter.isEmpty() && !t.getDescription().toUpperCase().contains(descriptionFilter)) {
+                    passesAllFilters = false;
+                }
+
+                // 3. Amount Range Filter
+                if (passesAllFilters && (t.getAmount() < minAmount || t.getAmount() > maxAmount)) {
+                    passesAllFilters = false;
+                }
+
+                // 4. Date Range Filter
+                if (passesAllFilters && (startDate != null || endDate != null)) {
+                    LocalDate transactionDate = LocalDate.parse(t.getDate(), DATE_FORMATTER);
+
+                    if (startDate != null && transactionDate.isBefore(startDate)) {
+                        passesAllFilters = false;
+                    }
+                    if (passesAllFilters && endDate != null && transactionDate.isAfter(endDate)) {
+                        passesAllFilters = false;
+                    }
+                }
+
+                if (passesAllFilters) {
+                    results.add(t);
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("\n❌ FATAL ERROR during search: Data is corrupted. Cannot continue.");
+            return;
+        }
+
+        // --- 4. Display Results ---
+
+        System.out.println("\n--- Search Results (" + results.size() + " matches) ---");
+        if (results.isEmpty()) {
+            System.out.println("No transactions matched all criteria.");
+        } else {
+            System.out.println("------------------------------------------");
+            System.out.println("DATE|TIME|DESCRIPTION|VENDOR|AMOUNT");
+            System.out.println("------------------------------------------");
+
+            // Loop backwards (newest first) through the results list
+            for (int i = results.size() - 1; i >= 0; i--) {
+                System.out.println(results.get(i).toString());
+            }
         }
     }
 }
