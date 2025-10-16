@@ -20,6 +20,36 @@ public class Transaction {
         this.amount = amount;
     }
 
+    // Getter Methods
+    public String getDate() {
+        return date;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getVendor() {
+        return vendor;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    // Methods For Filtering
+    public boolean isDeposit() {
+        return this.amount > 0;
+    }
+
+    public boolean isPayment() {
+        return this.amount < 0;
+    }
+
     @Override
     public String toString() {
         return date + "|" + time + "|" + description + "|" + vendor + "|" + amount; // pipe-separated format

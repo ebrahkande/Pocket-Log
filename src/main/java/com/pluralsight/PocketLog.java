@@ -1,16 +1,14 @@
 package com.pluralsight;
 
 // Import necessary classes
-import java.io.File; // Used for file operations
-import java.io.FileNotFoundException; // Tools to handle missing file errors
-import java.time.DateTimeException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList; // Tool for storing lists of transactions
-import java.util.Date;
-import java.util.Scanner; // Tool for reading input
-import java.io.FileWriter; // Tool for writing character data to files
-import java.io.IOException; // To handle potential file writing errors
+import java.io.File;  // Tool for file operations
+import java.io.FileNotFoundException; // Tool for file operations
+import java.io.FileWriter;  // Tool used for file writing
+import java.io.IOException;  // Tool used for general file I/O errors
+import java.time.LocalDate;  // Tool to work with dates
+import java.time.format.DateTimeFormatter;  // Tool to define the date format
+import java.util.ArrayList;  // Tools for storing lists of transactions
+import java.util.Scanner;  // Tools used for user input and file reading
 
 public class PocketLog {
 
