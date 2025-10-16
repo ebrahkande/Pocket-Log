@@ -1,6 +1,6 @@
 package com.pluralsight;
 
-// Import necessary classes
+// Import necessary tools
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
@@ -12,7 +12,7 @@ public class PocketLog {
     private static final Scanner menuScanner = new Scanner(System.in);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    // 1. MAIN ENTRY POINT
+    // MAIN ENTRY POINT
     public static void main(String[] args) {
 
         System.out.println("Welcome to PocketLog CLI!");
@@ -43,7 +43,7 @@ public class PocketLog {
                     running = false;
                     break;
                 default:
-                    System.out.println("❌ Invalid option. Please enter D, P, L, S, or X.");
+                    System.out.println(" Invalid option. Please enter D, P, L, S, or X.");
                     break;
             }
 
@@ -57,7 +57,7 @@ public class PocketLog {
         System.out.println("Application closed. Goodbye!");
     }
 
-    // 2. PRIMARY HELPER METHOD (Menu Display)
+    //  PRIMARY HELPER METHOD (Menu Display)
     private static void displayMainMenu() {
         System.out.println("\n--- POCKETLOG MAIN MENU ---");
         System.out.println("D) Add Deposit");
@@ -67,7 +67,7 @@ public class PocketLog {
         System.out.println("X) Exit");
     }
 
-    // 3. CORE ACTION METHOD (Record Transaction)
+    //  CORE ACTION METHOD (Record Transaction)
     private static void recordTransaction(String type) {
         System.out.println("\n--- RECORD NEW " + type + " ---");
 
@@ -96,20 +96,20 @@ public class PocketLog {
             // 3. Create Object
             Transaction newTransaction = new Transaction(date, time, description, vendor, amount);
 
-            // 4. File Writing (DELEGATED)
+            // 4. File Writing
             if (FinanceManager.saveTransaction(newTransaction)) {
-                System.out.println("\n✅ Success! " + type + " recorded.");
+                System.out.println("\n Success! " + type + " recorded.");
                 System.out.println("   -> " + newTransaction.toString());
             } else {
-                System.out.println("\n❌ ERROR: Could not write to the transaction file.");
+                System.out.println("\n ERROR: Could not write to the transaction file.");
             }
 
         } catch (NumberFormatException e) {
-            System.out.println("\n❌ ERROR: Invalid amount entered. Please use a number (e.g., 50.00).");
+            System.out.println("\n ERROR: Invalid amount entered. Please use a number (e.g., 50.00).");
         }
     }
 
-    // 4. CORE ACTION METHOD (Display Ledger)
+    // CORE ACTION METHOD (Display Ledger)
     private static void displayLedger() {
         boolean runningLedger = true;
         String searchVendor = "";
@@ -149,7 +149,7 @@ public class PocketLog {
 
             // Validation
             if (!filterChoice.equals("A") && !filterChoice.equals("D") && !filterChoice.equals("P") && !filterChoice.equals("V") && !filterChoice.equals("M")) {
-                System.out.println("❌ Invalid filter choice. Please enter A, D, P, V, M, or H.");
+                System.out.println(" Invalid filter choice. Please enter A, D, P, V, M, or H.");
                 System.out.println("Press ENTER to continue...");
                 menuScanner.nextLine();
                 continue;
@@ -200,7 +200,7 @@ public class PocketLog {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("\n❌ ERROR: An unexpected error occurred while displaying ledger.");
+                System.out.println("\n ERROR: An unexpected error occurred while displaying ledger.");
             }
 
             System.out.println("------------------------------------------");
@@ -209,11 +209,11 @@ public class PocketLog {
         }
     }
 
-    // 5. CORE ACTION METHOD (Custom Search)
+    // CORE ACTION METHOD (Custom Search)
     private static void customSearch() {
         System.out.println("\n--- CUSTOM SEARCH (Optional Filters) ---");
 
-        // --- 1. Collect Filters ---
+        //  1. Collect Filters
         System.out.println("\n--- TEXT FILTERS ---");
         System.out.print("Enter Vendor/Source name (leave blank to skip): ");
         String vendorFilter = menuScanner.nextLine().trim().toUpperCase();
@@ -235,7 +235,7 @@ public class PocketLog {
         System.out.print("Enter End Date (YYYY-MM-DD, blank to skip): ");
         String endDateStr = menuScanner.nextLine().trim();
 
-        // --- 2. Prepare Filters for Logic ---
+        // 2. Prepare Filters for Logic
 
         double minAmount = 0.0;
         double maxAmount = Double.MAX_VALUE;
@@ -258,14 +258,14 @@ public class PocketLog {
             }
 
         } catch (NumberFormatException e) {
-            System.out.println("\n❌ ERROR: Invalid number entered for amount. Returning to main menu.");
+            System.out.println("\n ERROR: Invalid number entered for amount. Returning to main menu.");
             return;
         } catch (java.time.format.DateTimeParseException e) {
-            System.out.println("\n❌ ERROR: Invalid date format. Please use YYYY-MM-DD. Returning to main menu.");
+            System.out.println("\n ERROR: Invalid date format. Please use YYYY-MM-DD. Returning to main menu.");
             return;
         }
 
-        // --- 3. Perform Filtering (Logic uses Transaction objects) ---
+        // 3. Perform Filtering (Logic uses Transaction objects)
 
         List<Transaction> transactions = FinanceManager.loadTransactions();
         List<Transaction> results = new ArrayList<>();
@@ -313,11 +313,11 @@ public class PocketLog {
             }
 
         } catch (Exception e) {
-            System.out.println("\n❌ FATAL ERROR during search: Data is corrupted. Cannot continue.");
+            System.out.println("\n FATAL ERROR during search: Data is corrupted. Cannot continue.");
             return;
         }
 
-        // --- 4. Display Results ---
+        // 4. Display Results
 
         System.out.println("\n--- Search Results (" + results.size() + " matches) ---");
         if (results.isEmpty()) {
